@@ -9,6 +9,9 @@ const Profile = require("../../models/Profile");
 // Load User model
 const User = require("../../models/User");
 
+// Load Input Validaiton
+const validateProfileInput = require("../../Validation/profile");
+
 // @route          GET api/profile/test
 // @description    Tests profile route
 // @access         Public
@@ -23,6 +26,7 @@ router.get(
   (req, res) => {
     const errors = {};
     Profile.findOne({ user: req.user.id })
+      .populate('user', ['name', 'avatar'])
       .then(profile => {
         if (!profile) {
           errors.noprofile = "There is no profile for this user";
@@ -37,10 +41,20 @@ router.get(
 // @route          POST api/profile
 // @description    Create or edit user profile
 // @access         Private
-router.get(
+router.post(
   "/",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
+    
+    // Check for errors before anything else
+    const { errors, isValid } = validateProfileInput(req.body);
+    
+    // Check validation
+    if(!isValid){
+      // Return any errors with 400 status
+      return res.status(400).json(errors);
+    }
+
     // Get fields
     const profileFields = {};
     profileFields.user = req.user.id;
@@ -66,7 +80,7 @@ router.get(
     if (req.body.linkedin) profileFields.social.linkedin = req.body.linkedin;
     if (req.body.instagram) profileFields.social.instagram = req.body.instagram;
 
-    profile.findOne({user: req.user.id})
+    Profile.findOne({user: req.user.id})
     .then(profile => {
       if(profile){
         // 
@@ -75,11 +89,9 @@ router.get(
           { $set: profileFields }, 
           { new: true })
           .then(profile => res.json(profile));
-      }else {
-        // Create
-
+      } else { // Create
         // Check to see if handler exist
-        profile.findOne({handle: profileFields.handle })
+        Profile.findOne({handle: profileFields.handle })
         .then(profile => {
           if(profile){
             errors.handle = 'That handle already exists';
