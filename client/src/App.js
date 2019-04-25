@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import jwt_decode from "jwt-decode";
 import setAuthToken from "./utils/setAuthToken";
 import { setCurrentUser, logoutUser } from "./actions/authActions";
@@ -13,6 +13,9 @@ import Footer from "./components/layout/Footer";
 import Landing from "./components/layout/Landing";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
+import Dashboard from "./components/dashboard/Dashboard";
+import { clearProfile } from "./actions/profileActions";
+import PrivateRoute from "./components/common/PrivateRoute";
 
 // Check for token
 if (localStorage.jwtToken) {
@@ -27,8 +30,8 @@ if (localStorage.jwtToken) {
   if (decode.exp < currentTime) {
     // Logout user
     store.dispatch(logoutUser());
-    // TODO: clear current Profile
-
+    // Clear current Profile
+    store.dispatch(clearProfile());
     // Redirect to login
     window.location.href = "login";
   }
@@ -45,6 +48,9 @@ class App extends Component {
             <div className="container">
               <Route exact path="/register" component={Register} />
               <Route exact path="/login" component={Login} />
+              <Switch>
+                <PrivateRoute exact path="/dashboard" component={Dashboard} />
+              </Switch>
             </div>
             <Footer />
           </div>
